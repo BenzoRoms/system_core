@@ -172,7 +172,7 @@ size_t LogBufferElement::populateDroppedMessage(char *&buffer,
     if (mLogId == LOG_ID_EVENTS) {
         android_log_event_string_t *e = reinterpret_cast<android_log_event_string_t *>(buffer);
 
-        e->header.tag = htole32(LOGD_LOG_TAG);
+        e->header.tag = htole32(CHATTY_LOG_TAG);
         e->type = EVENT_TYPE_STRING;
         e->length = htole32(len);
     } else {
