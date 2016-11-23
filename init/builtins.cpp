@@ -45,6 +45,7 @@
 #include <fs_mgr.h>
 #include <android-base/file.h>
 #include <android-base/parseint.h>
+#include <android-base/strings.h>
 #include <android-base/stringprintf.h>
 #include <bootloader_message/bootloader_message.h>
 #include <cutils/partition_utils.h>
@@ -343,6 +344,40 @@ static int do_mkdir(const std::vector<std::string>& args) {
         }
     }
     return 0;
+}
+
+static int do_mkdir_parallel(const std::vector<std::string>& args) {
+    int ret = 0;
+    // like /mnt/secure,0700,root,root /mnt/asec,0755,root,system
+    for (const auto& one_group : args){
+        std::vector<std::string> mkdir_args = android::base::Split(one_group, ",");
+        if (mkdir_args.size() != 4 ){
+            if (one_group != args[0]) {
+                ERROR("Not right format for mkdir_parallel: %s\n", one_group.c_str());
+            }
+            continue;
+        }
+        mkdir_args.insert(mkdir_args.begin(), "mkdir");
+
+        pid_t pid = fork();
+        if (pid == 0) { //child
+            ret = do_mkdir(mkdir_args);
+            if (ret != 0 ) {
+                ERROR("mkdir_parallel failed for group: %s\n", one_group.c_str());
+            }
+            _exit(0);
+        } else if (pid < 0) {
+            ERROR("mkdir_parallel Failed to create sub process for group: %s\n", one_group.c_str());
+        }
+    }
+
+    //Need to ensure all children finished here.
+    //while (waitpid(-1, NULL, 0)) {
+    //   if (errno == ECHILD) break;
+    //}
+
+    // only return 0 at the moment
+    return ret;
 }
 
 /* umount <path> */
@@ -983,6 +1018,25 @@ static int do_chmod(const std::vector<std::string>& args) {
     return 0;
 }
 
+static int do_chmod_chown(const std::vector<std::string>& args){
+    mode_t mode = get_mode(args[2].c_str());
+    if (fchmodat(AT_FDCWD, args[1].c_str(), mode, AT_SYMLINK_NOFOLLOW) < 0) {
+        return -errno;
+    }
+
+    /* GID is optional. */
+    if (args.size() == 4) {
+        if (lchown(args[1].c_str(), decode_uid(args[3].c_str()), -1) == -1)
+            return -errno;
+    } else if (args.size() == 5) {
+        if (lchown(args[1].c_str(), decode_uid(args[3].c_str()),
+               decode_uid(args[4].c_str())) == -1)
+           return -errno;
+    } else {
+        return -1;
+    }
+    return 0;
+}
 static int do_restorecon(const std::vector<std::string>& args) {
     int ret = 0;
 
@@ -1070,6 +1124,7 @@ BuiltinFunctionMap::Map& BuiltinFunctionMap::map() const {
         {"bootchart",               {0,     0,    do_bootchart}},
         {"chmod",                   {2,     4,    do_chmod}},
         {"chown",                   {2,     5,    do_chown}},
+        {"chmod_chown",             {3,     4,    do_chmod_chown}},
         {"class_reset",             {1,     1,    do_class_reset}},
         {"class_start",             {1,     1,    do_class_start}},
         {"class_stop",              {1,     1,    do_class_stop}},
@@ -1087,6 +1142,7 @@ BuiltinFunctionMap::Map& BuiltinFunctionMap::map() const {
         {"load_system_props",       {0,     0,    do_load_system_props}},
         {"loglevel",                {1,     1,    do_loglevel}},
         {"mkdir",                   {1,     4,    do_mkdir}},
+        {"mkdir_parallel",          {1,     kMax, do_mkdir_parallel}},
         {"mount_all",               {1,     kMax, do_mount_all}},
         {"mount",                   {3,     kMax, do_mount}},
         {"umount",                  {1,     1,    do_umount}},
