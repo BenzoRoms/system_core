@@ -755,8 +755,6 @@ int main(int argc, char** argv) {
             timeout = 0;
         }
 
-        bootchart_sample(&timeout);
-
         epoll_event ev;
         int nr = TEMP_FAILURE_RETRY(epoll_wait(epoll_fd, &ev, 1, timeout));
         if (nr == -1) {
