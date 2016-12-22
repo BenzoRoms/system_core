@@ -339,6 +339,8 @@ on post-fs-data
     start zygote
     start zygote_secondary
 
+    start servicemanager
+
     # Reload policy from /data/security if present.
     setprop selinux.reload_policy 1
 
