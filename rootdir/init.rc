@@ -327,10 +327,6 @@ on post-fs-data
 
     mkdir_parallel /data/misc/profiles/cur,0771,system,system /data/misc/profiles/ref,0771,system,system
 
-    # symlink to bugreport storage location
-    rm /data/bugreports
-    symlink /data/user_de/0/com.android.shell/files/bugreports /data/bugreports
-
     chmod_chown /data/resource-cache 0771 system system
 
     symlink /data/data /data/user/0
