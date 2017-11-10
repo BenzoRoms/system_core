@@ -175,6 +175,13 @@ on init
     copy /dev/cpuset/cpus /dev/cpuset/top-app/cpus
     copy /dev/cpuset/mems /dev/cpuset/top-app/mems
 
+    # Use all CPUs during bootup (should be changed when system is up)
+    copy /sys/devices/system/cpu/possible /dev/cpuset/foreground/cpus
+    copy /sys/devices/system/cpu/possible /dev/cpuset/top-app/cpus
+    copy /sys/devices/system/cpu/possible /dev/cpuset/background/cpus
+    copy /sys/devices/system/cpu/possible /dev/cpuset/system-background/cpus
+    write /dev/cpuset/foreground/boost/cpus 0
+
     # change permissions for all cpusets we'll touch at runtime
     chown system system /dev/cpuset
     chown system system /dev/cpuset/foreground
